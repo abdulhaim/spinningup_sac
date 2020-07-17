@@ -149,8 +149,11 @@ def sac(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
 
     torch.manual_seed(seed)
     np.random.seed(seed)
+    from ant_env import AntEnv
+    env = AntEnv()
+    test_env = AntEnv()
+    #env, test_env = env_fn(), env_fn()
 
-    env, test_env = env_fn(), env_fn()
     obs_dim = env.observation_space.shape
     act_dim = env.action_space.shape[0]
 
