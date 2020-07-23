@@ -2,7 +2,7 @@
 
 FOLDER_NAME="spinningup"
 declare -a arr=(
-    "ec2-54-82-226-198.compute-1.amazonaws.com"
+    "ec2-18-208-216-83.compute-1.amazonaws.com"
     )
 
 for SSH_ADDRESS in "${arr[@]}"
@@ -14,3 +14,5 @@ do
     scp -i ~/Documents/abdulhai.pem -r ~/Desktop/sac-baseline-experiments/spinningup ubuntu@$SSH_ADDRESS:/home/ubuntu/
 
 done
+
+scp -i ~/Documents/abdulhai.pem -r ubuntu@ec2-18-208-216-83.compute-1.amazonaws.com:/home/ubuntu/spinningup/data .

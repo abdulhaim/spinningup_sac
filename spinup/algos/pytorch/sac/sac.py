@@ -44,7 +44,7 @@ class ReplayBuffer:
 
 def sac(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0, 
         steps_per_epoch=4000, epochs=100, replay_size=int(1e6), gamma=0.99, 
-        polyak=0.995, lr=1e-3, alpha=0.2, batch_size=100, start_steps=10000, 
+        polyak=0.995, lr=1e-3, alpha=0.2, batch_size=100, start_steps=10000,
         update_after=1000, update_every=50, num_test_episodes=10, max_ep_len=1000, 
         logger_kwargs=dict(), save_freq=1):
     """
@@ -149,10 +149,7 @@ def sac(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
 
     torch.manual_seed(seed)
     np.random.seed(seed)
-    from ant_env import AntEnv
-    env = AntEnv()
-    test_env = AntEnv()
-    #env, test_env = env_fn(), env_fn()
+    env, test_env = env_fn(), env_fn()
 
     obs_dim = env.observation_space.shape
     act_dim = env.action_space.shape[0]
@@ -284,7 +281,8 @@ def sac(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
     total_steps = steps_per_epoch * epochs
     start_time = time.time()
     o, ep_ret, ep_len = env.reset(), 0, 0
-
+    prob_iteration = 0
+    cripple_probs = [1.0, 0.8, 0.6, 0.4, 0.2, 0.0]
     # Main loop: collect experience in env and update/log each epoch
     for t in range(total_steps):
         
@@ -331,6 +329,7 @@ def sac(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
             # Save model
             if (epoch % save_freq == 0) or (epoch == epochs):
                 logger.save_state({'env': env}, None)
+                torch.save(ac.state_dict(), "data/" + logger_kwargs["exp_name"] + "/model_ac.pth")
 
             # Test the performance of the deterministic version of the agent.
             test_agent()
@@ -350,6 +349,11 @@ def sac(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
             logger.log_tabular('Time', time.time()-start_time)
             logger.dump_tabular()
 
+            if epoch % 600 == 0:
+                env.cripple_prob = cripple_probs[prob_iteration]
+                test_env = cripple_prob = cripple_probs[prob_iteration]
+                prob_iteration += 1
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
@@ -358,16 +362,18 @@ if __name__ == '__main__':
     parser.add_argument('--l', type=int, default=2)
     parser.add_argument('--gamma', type=float, default=0.99)
     parser.add_argument('--seed', '-s', type=int, default=0)
-    parser.add_argument('--epochs', type=int, default=50)
-    parser.add_argument('--exp_name', type=str, default='sac')
+    parser.add_argument('--epochs', type=int, default=600*6)
+    parser.add_argument('--exp_name', type=str, default='sac_bug_cripple_0')
     args = parser.parse_args()
+
+    torch.set_num_threads(torch.get_num_threads())
 
     from spinup.utils.run_utils import setup_logger_kwargs
     logger_kwargs = setup_logger_kwargs(args.exp_name, args.seed)
 
-    torch.set_num_threads(torch.get_num_threads())
-
-    sac(lambda : gym.make(args.env), actor_critic=core.MLPActorCritic,
-        ac_kwargs=dict(hidden_sizes=[args.hid]*args.l), 
-        gamma=args.gamma, seed=args.seed, epochs=args.epochs,
-        logger_kwargs=logger_kwargs)
+    from bug_crippled import BugCrippledEnv
+    env = BugCrippledEnv(cripple_prob=1.0)
+    sac(lambda:env, actor_critic=core.MLPActorCritic,
+            ac_kwargs=dict(hidden_sizes=[args.hid]*args.l),
+            gamma=args.gamma, seed=args.seed, epochs=args.epochs,
+            logger_kwargs=logger_kwargs)
