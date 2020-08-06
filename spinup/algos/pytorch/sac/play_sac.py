@@ -23,7 +23,7 @@ def test_sac(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
     test_env = BugCrippledEnv()
     # Create actor-critic module and target networks
     ac = actor_critic(test_env.observation_space, test_env.action_space, **ac_kwargs)
-    ac.load_state_dict(torch.load("data/sac_5/sac_5_s0/pyt_save/model_ac.pth"))
+    ac.load_state_dict(torch.load("data/sac_bug_cripple_remote_2/sac_bug_cripple_2/model_ac.pth"))
     ac.eval()
 
     for j in range(num_test_episodes):

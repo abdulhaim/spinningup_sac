@@ -114,7 +114,6 @@ class BugCrippledEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         reward = rewards - costs
         done = self.done
         observation = self._get_obs()
-        #print("observation",observation)
         info = {
             'reward_forward': forward_reward,
             'reward_ctrl': -ctrl_cost,
